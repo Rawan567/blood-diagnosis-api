@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from contextlib import asynccontextmanager
 import os
@@ -11,23 +11,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ==================== LIFESPAN (Startup / Shutdown safe) ====================
+# ==================== LIFESPAN SAFE ====================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Safe lifespan for Railway"""
-    print(f"🚀 [{datetime.now()}] Starting app...")
+    print(f"🚀 [{datetime.now()}] Starting Blood Diagnosis System...")
     try:
         from app.services.ai_service import cbc_prediction_service
-        if hasattr(cbc_prediction_service, "is_available"):
-            if cbc_prediction_service.is_available():
-                cbc_prediction_service.load_model()
-                print("✅ AI model loaded successfully")
-            else:
-                print("⚠️ AI features disabled (missing dependencies)")
+        if hasattr(cbc_prediction_service, "is_available") and cbc_prediction_service.is_available():
+            cbc_prediction_service.load_model()
+            print("✅ AI model loaded")
+        else:
+            print("⚠️ AI features disabled or missing dependencies")
     except Exception as e:
-        print(f"⚠️ AI service warning: {e}")
+        print(f"⚠️ AI service failed: {e}")
     yield
-    print(f"🛑 [{datetime.now()}] App shutdown complete")
+    print(f"🛑 [{datetime.now()}] Application shutdown")
 
 # ==================== FASTAPI APP ====================
 app = FastAPI(
@@ -63,21 +61,17 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# ==================== HEALTHCHECK + HOME PAGE ====================
-if templates:
-    @app.get("/", response_class=HTMLResponse)
-    async def home(request: Request):
-        # تأكد إن عندك home.html
+# ==================== HOME PAGE / HEALTHCHECK ====================
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    if templates and os.path.exists("app/templates/home.html"):
         return templates.TemplateResponse("home.html", {"request": request})
-else:
-    @app.get("/")
-    async def home_fallback():
-        return {
-            "status": "ok",
-            "service": "blood_diagnosis",
-            "timestamp": datetime.now().isoformat(),
-            "version": os.getenv("APP_VERSION", "1.0.0")
-        }
+    return {
+        "status": "ok",
+        "service": "blood_diagnosis",
+        "timestamp": datetime.now().isoformat(),
+        "version": os.getenv("APP_VERSION", "1.0.0")
+    }
 
 @app.get("/health")
 async def health_check():
@@ -86,8 +80,7 @@ async def health_check():
 # ==================== EXCEPTION HANDLERS ====================
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    accept_header = request.headers.get("accept", "")
-    if "application/json" in accept_header or not templates:
+    if "application/json" in request.headers.get("accept", "") or not templates:
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
     return templates.TemplateResponse(
         f"errors/{exc.status_code}.html",
@@ -97,12 +90,16 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    print(f"🔥 Unhandled error: {exc}")
     import traceback
+    print(f"🔥 Unhandled error: {exc}")
     traceback.print_exc()
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal server error", "error": str(exc)}
+        content={
+            "detail": "Internal server error",
+            "error": str(exc),
+            "timestamp": datetime.now().isoformat()
+        }
     )
 
 # ==================== ROUTERS ====================

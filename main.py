@@ -1,9 +1,7 @@
 """
 Root entry point for Railway deployment
-This file is in the ROOT directory, not inside app/
 """
 
-import os
 from app.main import app  # استورد FastAPI app من app/main.py
 
 if __name__ == "__main__":
