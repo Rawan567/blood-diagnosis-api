@@ -1,0 +1,9 @@
+﻿
+uvicorn==0.34.0
+
+httptools==0.7.1
+
+uvloop==0.21.0
+
+websockets==14.1
+
