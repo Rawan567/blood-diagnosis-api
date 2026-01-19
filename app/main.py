@@ -37,16 +37,9 @@ app = FastAPI(
     description="Blood Diagnosis System with AI-powered analysis",
     lifespan=lifespan
 )
-# ✅ Railway healthcheck
-@app.get("/")
-async def root_healthcheck():
-    return {"status": "ok"}
-# Initialize templates early so exception handlers can use it
-if os.path.isdir("app/templates"):
-    templates = Jinja2Templates(directory="app/templates")
-else:
-    templates = None
 
+# Initialize templates early so exception handlers can use it
+templates = Jinja2Templates(directory="app/templates")
 
 # Custom exception handler for HTTP errors
 @app.exception_handler(StarletteHTTPException)
@@ -55,13 +48,11 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     
     # Handle 401 - Unauthorized
     if exc.status_code == 401:
-     if "application/json" in accept_header:
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={"detail": exc.detail}
-        )
-
-    if templates:
+        if "application/json" in accept_header:
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={"detail": exc.detail}
+            )
         return templates.TemplateResponse(
             "errors/401.html",
             {
@@ -70,12 +61,6 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
             },
             status_code=401
         )
-
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail}
-    )
-
     
     # Handle 403 - Forbidden
     if exc.status_code == 403:
@@ -201,12 +186,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-if os.path.isdir("app/static"):
-    app.mount("/static", StaticFiles(directory="app/static"), name="static")
-
-if os.path.isdir("uploads"):
-    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Include routers
 app.include_router(public.router)
