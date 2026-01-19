@@ -5,42 +5,32 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from contextlib import asynccontextmanager
+from app.routers import auth, doctors, patients, admin, public
+from app.services.ui_service import set_flash_message
 import os
-from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# ==================== LIFESPAN ====================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan event handler - Safe version for Railway"""
-    print(f"🚀 [{datetime.now()}] Starting Blood Diagnosis System...")
-    
-    # Try to load AI services (non-critical)
+    """Lifespan event handler for startup and shutdown"""
+    # Startup
     try:
-        print("🤖 Attempting to load AI services...")
         from app.services.ai_service import cbc_prediction_service
-        
-        if hasattr(cbc_prediction_service, 'is_available'):
-            if cbc_prediction_service.is_available():
-                cbc_prediction_service.load_model()
-                print("✅ AI prediction model loaded successfully")
-            else:
-                print("⚠️ AI prediction features disabled (missing dependencies)")
+        if cbc_prediction_service.is_available():
+            cbc_prediction_service.load_model()
+            print("✅ CBC Anemia prediction model loaded successfully")
         else:
-            print("⚠️ cbc_prediction_service structure unexpected")
-            
+            print("⚠️ AI prediction features disabled (missing pytorch_tabnet dependency)")
     except Exception as e:
-        print(f"⚠️ AI setup warning: {e}")
-    
-    print("✅ Application startup completed")
+        print(f"⚠️ Warning: Could not load CBC model: {e}")
     
     yield
     
-    print(f"🛑 [{datetime.now()}] Shutting down...")
+    # Shutdown (if needed in the future)
+    # Add cleanup code here
 
-# ==================== FASTAPI APP ====================
 app = FastAPI(
     title=os.getenv("APP_NAME", "Blood Diagnosis System"),
     version=os.getenv("APP_VERSION", "1.0.0"),
@@ -48,12 +38,146 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ==================== TEMPLATES ====================
-templates = Jinja2Templates(directory="app/templates") if os.path.isdir("app/templates") else None
-print(f"✅ Templates: {'Found' if templates else 'Not Found'}")
+# Initialize templates early so exception handlers can use it
+templates = Jinja2Templates(directory="app/templates")
 
-# ==================== CORS ====================
+# Custom exception handler for HTTP errors
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    accept_header = request.headers.get("accept", "")
+    
+    # Handle 401 - Unauthorized
+    if exc.status_code == 401:
+        if "application/json" in accept_header:
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={"detail": exc.detail}
+            )
+        return templates.TemplateResponse(
+            "errors/401.html",
+            {
+                "request": request,
+                "detail": exc.detail
+            },
+            status_code=401
+        )
+    
+    # Handle 403 - Forbidden
+    if exc.status_code == 403:
+        if "application/json" in accept_header:
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={"detail": exc.detail}
+            )
+        
+        user_role = None
+        try:
+            from app.services.auth_service import verify_token
+            token = request.cookies.get("access_token")
+            
+            if token:
+                if token.startswith("Bearer "):
+                    token = token[7:]
+                token_data = verify_token(token)
+                
+                if token_data and token_data.role:
+                    user_role = token_data.role
+        except:
+            pass
+        
+        return templates.TemplateResponse(
+            "errors/403.html",
+            {
+                "request": request,
+                "detail": exc.detail,
+                "user_role": user_role
+            },
+            status_code=403
+        )
+    
+    # Handle 404 - Not Found
+    if exc.status_code == 404:
+        if "application/json" in accept_header:
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={"detail": exc.detail}
+            )
+        return templates.TemplateResponse(
+            "errors/404.html",
+            {
+                "request": request,
+                "detail": exc.detail
+            },
+            status_code=404
+        )
+    
+    # Handle other status codes with generic error page
+    return templates.TemplateResponse(
+        "base.html",
+        {
+            "request": request,
+            "error": str(exc.detail) if exc.detail else "An error occurred"
+        },
+        status_code=exc.status_code
+    )
+
+# Custom exception handler for 500 Internal Server Errors
+@app.exception_handler(500)
+async def internal_server_error_handler(request: Request, exc: Exception):
+    accept_header = request.headers.get("accept", "")
+    
+    if "application/json" in accept_header:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error occurred"}
+        )
+    
+    import uuid
+    error_id = str(uuid.uuid4())[:8]
+    
+    # Log the error (in production, you'd log to a file or monitoring service)
+    print(f"Error ID {error_id}: {str(exc)}")
+    
+    return templates.TemplateResponse(
+        "errors/500.html",
+        {
+            "request": request,
+            "detail": "An unexpected error occurred",
+            "error_id": error_id
+        },
+        status_code=500
+    )
+
+# Global exception handler for unhandled exceptions
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    accept_header = request.headers.get("accept", "")
+    
+    if "application/json" in accept_header:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error occurred"}
+        )
+    
+    import uuid
+    error_id = str(uuid.uuid4())[:8]
+    
+    # Log the error (in production, you'd log to a file or monitoring service)
+    print(f"Error ID {error_id}: {type(exc).__name__} - {str(exc)}")
+    
+    return templates.TemplateResponse(
+        "errors/500.html",
+        {
+            "request": request,
+            "detail": "An unexpected error occurred",
+            "error_id": error_id
+        },
+        status_code=500
+    )
+
+# CORS Configuration
 origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -62,179 +186,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ==================== STATIC FILES ====================
-if os.path.isdir("app/static"):
-    app.mount("/static", StaticFiles(directory="app/static"), name="static")
-    print("✅ Static files mounted")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-if os.path.isdir("uploads"):
-    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-    print("✅ Uploads directory mounted")
+# Include routers
+app.include_router(public.router)
+app.include_router(auth.router)
+app.include_router(admin.router)
+app.include_router(doctors.router)
+app.include_router(patients.router)
 
-# ==================== EXCEPTION HANDLERS ====================
-@app.exception_handler(StarletteHTTPException)
-async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    accept_header = request.headers.get("accept", "")
-    
-    if "application/json" in accept_header:
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={"detail": exc.detail}
-        )
-    
-    if templates:
-        error_template = f"errors/{exc.status_code}.html"
-        template_path = os.path.join("app/templates", error_template)
-        
-        if os.path.exists(template_path):
-            return templates.TemplateResponse(
-                error_template,
-                {"request": request, "detail": exc.detail},
-                status_code=exc.status_code
-            )
-    
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail}
-    )
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    """Global exception handler"""
-    import traceback
-    
-    error_details = {
-        "error": str(exc),
-        "type": type(exc).__name__,
-        "timestamp": datetime.now().isoformat()
-    }
-    
-    print(f"🔥 Unhandled error: {exc}")
-    traceback.print_exc()
-    
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error", **error_details}
-    )
-
-# ==================== HEALTH CHECK ====================
+# Health check endpoint للـ Railway
 @app.get("/health")
 async def health_check():
-    """Health check endpoint for Railway"""
-    return {
-        "status": "healthy",
-        "service": "blood_diagnosis",
-        "timestamp": datetime.now().isoformat(),
-        "version": os.getenv("APP_VERSION", "1.0.0")
-    }
-
-# ==================== DEBUG ENDPOINTS ====================
-@app.get("/debug/info")
-async def debug_info():
-    """System information"""
-    import sys
-    import platform
-    
-    return {
-        "python_version": sys.version,
-        "platform": platform.platform(),
-        "current_directory": os.getcwd(),
-        "files_in_root": os.listdir(".")[:20],
-        "templates_available": templates is not None,
-        "static_mounted": os.path.isdir("app/static"),
-        "uploads_mounted": os.path.isdir("uploads"),
-    }
-
-# ==================== ROUTERS ====================
-print("🔄 Loading routers...")
-
-routers_loaded = {
-    "public": False,
-    "auth": False,
-    "admin": False,
-    "doctors": False,
-    "patients": False
-}
-
-# Try to import routers one by one (graceful failure)
-try:
-    from app.routers import public
-    app.include_router(public.router, tags=["public"])
-    routers_loaded["public"] = True
-    print("✅ Public router loaded")
-except Exception as e:
-    print(f"⚠️ Public router failed: {e}")
-
-try:
-    from app.routers import auth
-    app.include_router(auth.router, prefix="/auth", tags=["auth"])
-    routers_loaded["auth"] = True
-    print("✅ Auth router loaded")
-except Exception as e:
-    print(f"⚠️ Auth router failed: {e}")
-
-try:
-    from app.routers import admin
-    app.include_router(admin.router, prefix="/admin", tags=["admin"])
-    routers_loaded["admin"] = True
-    print("✅ Admin router loaded")
-except Exception as e:
-    print(f"⚠️ Admin router failed: {e}")
-
-try:
-    from app.routers import doctors
-    app.include_router(doctors.router, prefix="/doctors", tags=["doctors"])
-    routers_loaded["doctors"] = True
-    print("✅ Doctors router loaded")
-except Exception as e:
-    print(f"⚠️ Doctors router failed: {e}")
-
-try:
-    from app.routers import patients
-    app.include_router(patients.router, prefix="/patients", tags=["patients"])
-    routers_loaded["patients"] = True
-    print("✅ Patients router loaded")
-except Exception as e:
-    print(f"⚠️ Patients router failed: {e}")
-
-# ==================== FALLBACK ROOT ====================
-# إذا لم يتم تحميل public router، نعمل fallback
-if not routers_loaded["public"]:
-    @app.get("/")
-    async def root_fallback(request: Request):
-        """Fallback root endpoint"""
-        if templates and os.path.exists("app/templates/public/index.html"):
-            return templates.TemplateResponse(
-                "public/index.html",
-                {"request": request}
-            )
-        elif templates and os.path.exists("app/templates/index.html"):
-            return templates.TemplateResponse(
-                "index.html",
-                {"request": request}
-            )
-        else:
-            # إذا لم تكن هناك templates، نعرض صفحة HTML بسيطة
-            return JSONResponse({
-                "status": "ok",
-                "message": "Blood Diagnosis System",
-                "version": os.getenv("APP_VERSION", "1.0.0"),
-                "routers_loaded": routers_loaded,
-                "links": {
-                    "api_docs": "/docs",
-                    "health": "/health",
-                    "debug": "/debug/info"
-                }
-            })
-
-# ==================== STARTUP MESSAGE ====================
-print(f"✅ FastAPI app ready at {datetime.now()}")
-print(f"✅ Routers status: {routers_loaded}")
-print(f"✅ Endpoints: /, /health, /docs, /debug/info")
-
-# ==================== LOCAL RUN ====================
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    print(f"🚀 Starting server on http://0.0.0.0:{port}")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    return {"status": "healthy"}
