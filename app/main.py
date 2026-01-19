@@ -37,7 +37,10 @@ app = FastAPI(
     description="Blood Diagnosis System with AI-powered analysis",
     lifespan=lifespan
 )
-
+# ✅ Railway healthcheck
+@app.get("/")
+async def root_healthcheck():
+    return {"status": "ok"}
 # Initialize templates early so exception handlers can use it
 templates = Jinja2Templates(directory="app/templates")
 
