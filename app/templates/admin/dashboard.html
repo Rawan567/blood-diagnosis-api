@@ -1,0 +1,196 @@
+{% extends "layouts/base_admin.html" %}
+
+{% block title %}Admin Dashboard - Blood Diagnosis System{% endblock %}
+
+{% block extra_js %}
+<script>
+// Pass data to JavaScript
+window.registrationTrendData = {{ registration_trend | tojson }};
+window.roleDistributionData = {{ role_distribution | tojson }};
+window.genderDistributionData = {{ gender_distribution | tojson }};
+window.bloodTypeDistributionData = {{ blood_type_distribution | tojson }};
+</script>
+<script src="{{ url_for('static', path='js/admin_dashboard.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="px-2 sm:px-4 py-3 sm:py-6 animate-slide-up">
+    <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4 sm:mb-6 md:mb-8">Admin Dashboard</h1>
+
+    <!-- Statistics -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
+        <div class="glass-effect rounded-xl shadow-lg p-4 sm:p-6 hover-lift">
+            <div class="flex items-center justify-between mb-4">
+                <div class="h-12 w-12 rounded-lg gradient-blue flex items-center justify-center">
+                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                </div>
+            </div>
+            <p class="text-3xl font-bold text-gray-900">{{ stats.total_users }}</p>
+            <p class="text-sm text-gray-600 mt-1">Total Users</p>
+        </div>
+
+        <div class="glass-effect rounded-xl shadow-lg p-4 sm:p-6 hover-lift">
+            <div class="flex items-center justify-between mb-4">
+                <div class="h-12 w-12 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+            </div>
+            <p class="text-3xl font-bold text-gray-900">{{ stats.total_tests }}</p>
+            <p class="text-sm text-gray-600 mt-1">Tests Processed</p>
+        </div>
+
+        <div class="glass-effect rounded-xl shadow-lg p-4 sm:p-6 hover-lift">
+            <div class="flex items-center justify-between mb-4">
+                <div class="h-12 w-12 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </div>
+            </div>
+            <p class="text-3xl font-bold text-gray-900">{{ stats.total_doctors }}</p>
+            <p class="text-sm text-gray-600 mt-1">Total Doctors</p>
+        </div>
+
+        <a href="/admin/messages" class="glass-effect rounded-xl shadow-lg p-4 sm:p-6 hover-lift transition-all duration-200 hover:shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <div class="h-12 w-12 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
+                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                {% if stats.unread_messages > 0 %}
+                <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">{{ stats.unread_messages }}</span>
+                {% endif %}
+            </div>
+            <p class="text-3xl font-bold text-gray-900">{{ stats.total_messages }}</p>
+            <p class="text-sm text-gray-600 mt-1">Total Messages</p>
+        </a>
+    </div>
+
+    <!-- User Analytics Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Registration Trend (Last 7 Days) -->
+        <div class="glass-effect rounded-xl shadow-xl p-6">
+            <h2 class="text-lg font-bold text-gray-900 mb-3">Daily Registrations (Last 7 Days)</h2>
+            <div style="height: 200px;">
+                <canvas id="registrationTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Role Distribution -->
+        <div class="glass-effect rounded-xl shadow-xl p-6">
+            <h2 class="text-lg font-bold text-gray-900 mb-3">User Role Distribution</h2>
+            <div style="height: 200px;">
+                <canvas id="roleDistributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- More Analytics -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Gender Distribution -->
+        <div class="glass-effect rounded-xl shadow-xl p-6">
+            <h2 class="text-lg font-bold text-gray-900 mb-3">Gender Distribution</h2>
+            <div style="height: 180px;">
+                <canvas id="genderChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Blood Type Distribution -->
+        <div class="glass-effect rounded-xl shadow-xl p-6">
+            <h2 class="text-lg font-bold text-gray-900 mb-3">Blood Type Distribution</h2>
+            <div style="height: 180px;">
+                <canvas id="bloodTypeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- User Statistics Summary -->
+        <div class="glass-effect rounded-xl shadow-xl p-6">
+            <h2 class="text-lg font-bold text-gray-900 mb-3">Quick Stats</h2>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center p-2.5 bg-blue-50 rounded-lg">
+                    <span class="text-sm font-semibold text-gray-700">Admins</span>
+                    <span class="text-lg font-bold text-blue-600">{{ stats.total_admins }}</span>
+                </div>
+                <div class="flex justify-between items-center p-2.5 bg-green-50 rounded-lg">
+                    <span class="text-sm font-semibold text-gray-700">Doctors</span>
+                    <span class="text-lg font-bold text-green-600">{{ stats.total_doctors }}</span>
+                </div>
+                <div class="flex justify-between items-center p-2.5 bg-purple-50 rounded-lg">
+                    <span class="text-sm font-semibold text-gray-700">Patients</span>
+                    <span class="text-lg font-bold text-purple-600">{{ stats.total_patients }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass-effect rounded-xl shadow-xl p-6">
+            <h2 class="text-lg font-bold text-gray-900 mb-4">Recent Registrations</h2>
+            <div class="space-y-4">
+                {% for user in recent_users %}
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200">
+                    <div class="flex items-center space-x-3">
+                        <div class="h-10 w-10 rounded-full gradient-blue flex items-center justify-center text-white font-semibold">
+                            {{ user.initials }}
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">{{ user.name }}</p>
+                            <p class="text-sm text-gray-500">{{ user.role }} • {{ user.date }}</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Active</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="glass-effect rounded-xl shadow-xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-gray-900">Recent Messages</h2>
+                <a href="/admin/messages" class="text-sm text-blue-600 hover:text-blue-700 font-semibold hover:underline">
+                    View All →
+                </a>
+            </div>
+            <div class="space-y-3">
+                {% if recent_messages %}
+                    {% for message in recent_messages %}
+                    <a href="/admin/messages/{{ message.id }}" class="block p-4 border border-gray-200 rounded-lg hover:shadow-md hover:border-blue-300 transition-all duration-200">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex items-center space-x-3 flex-1">
+                                <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
+                                    {{ message.name[0].upper() }}
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-semibold text-gray-900 truncate">{{ message.name }}</p>
+                                    <p class="text-sm text-gray-600 truncate">{{ message.subject }}</p>
+                                </div>
+                            </div>
+                            {% if message.is_read == 0 %}
+                            <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full flex-shrink-0 ml-2">Unread</span>
+                            {% endif %}
+                        </div>
+                        <p class="text-xs text-gray-500 truncate">{{ message.message[:80] }}...</p>
+                        <p class="text-xs text-gray-400 mt-1">{{ message.created_at.strftime('%b %d, %Y at %I:%M %p') }}</p>
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        <p class="text-sm text-gray-500">No messages yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}

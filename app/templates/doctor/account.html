@@ -1,0 +1,134 @@
+{% extends "layouts/base_doctor.html" %}
+
+{% block title %}My Account - Doctor Dashboard{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 animate-slide-up">
+    <div class="max-w-4xl mx-auto">
+        <!-- Deactivation Warning Banner -->
+        {% if current_user.is_active != 1 %}
+        <div class="mb-6 bg-gradient-to-r from-red-500 to-orange-600 rounded-xl shadow-xl p-6 text-white">
+            <div class="flex items-start space-x-4">
+                <div class="flex-shrink-0">
+                    <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2">Account Status: Suspended</h3>
+                    <p class="text-white/90 mb-4">Your account has been temporarily deactivated. Please contact the administrator to resolve this issue and restore full access to your account.</p>
+                    <a href="/contact?subject=Account%20Reactivation%20Request%20-%20Doctor" class="inline-flex items-center px-4 py-2 bg-white text-red-600 font-semibold rounded-lg hover:bg-red-50 transition-all duration-200">
+                        <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        Request Reactivation
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <h1 class="text-4xl font-bold text-gray-900 mb-8">Account Settings</h1>
+
+        <div class="space-y-6">
+            <!-- Profile Section -->
+            <div class="glass-effect rounded-2xl shadow-xl p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Profile Information</h2>
+                
+                <!-- Profile Image Upload -->
+                <form action="/doctor/upload-profile-image" method="POST" enctype="multipart/form-data" class="mb-6">
+                    <div class="flex justify-center mb-6">
+                        <div class="relative">
+                            {% if doctor.profile_image %}
+                            <img src="/{{ doctor.profile_image }}" alt="Profile" class="h-24 w-24 rounded-full object-cover border-4 border-green-500">
+                            {% else %}
+                            <div class="h-24 w-24 rounded-full gradient-blue flex items-center justify-center">
+                                <span class="text-3xl font-bold text-white">{{ doctor.fname[0] }}{{ doctor.lname[0] }}</span>
+                            </div>
+                            {% endif %}
+                            <label for="doctor-profile-image-input" class="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-white border-2 border-green-600 flex items-center justify-center hover:bg-green-50 transition-all duration-200 cursor-pointer">
+                                <svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                </svg>
+                            </label>
+                            <input type="file" id="doctor-profile-image-input" name="profile_image" accept="image/*" class="hidden" onchange="this.form.submit()">
+                        </div>
+                    </div>
+                </form>
+                
+                <form action="/doctor/update-profile" method="POST" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">First Name</label>
+                            <input type="text" name="fname" value="{{ doctor.fname }}" required class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Last Name</label>
+                            <input type="text" name="lname" value="{{ doctor.lname }}" required class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                            <input type="email" name="email" value="{{ doctor.email }}" required class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
+                            <input type="tel" name="phone" value="{{ phone or '' }}" class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Gender</label>
+                            <input type="text" value="{{ doctor.gender.capitalize() if doctor.gender else 'N/A' }}" readonly class="block w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Blood Type</label>
+                            <input type="text" value="{{ doctor.blood_type if doctor.blood_type else 'N/A' }}" readonly class="block w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Address</label>
+                        <textarea name="address" rows="3" class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">{{ doctor.address or '' }}</textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Specialization</label>
+                            <input type="text" name="specialization" value="{{ doctor_info.specialization if doctor_info else '' }}" class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">License Number</label>
+                            <input type="text" name="license_number" value="{{ doctor_info.license_number if doctor_info else '' }}" readonly class="block w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <button type="submit" class="px-6 py-3 gradient-blue text-white rounded-lg hover:shadow-lg transition-all duration-200">
+                        Update Profile
+                    </button>
+                </form>
+            </div>
+
+            <!-- Security Section -->
+            <div class="glass-effect rounded-2xl shadow-xl p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Security Settings</h2>
+                <form action="/doctor/change-password" method="POST" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Current Password</label>
+                        <input type="password" name="current_password" required class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">New Password</label>
+                        <input type="password" name="new_password" required minlength="8" class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Confirm New Password</label>
+                        <input type="password" name="confirm_password" required minlength="8" class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button type="submit" class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200">
+                        Change Password
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

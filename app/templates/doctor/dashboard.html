@@ -1,0 +1,276 @@
+{% extends "layouts/base_doctor.html" %}
+
+{% block title %}Doctor Dashboard - Blood Diagnosis System{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/dashboard-enhanced.css">
+<div class="px-2 sm:px-4 py-3 sm:py-6 animate-slide-up">
+    <!-- Deactivation Warning Banner -->
+    {% if current_user.is_active != 1 %}
+    <div class="mb-6 bg-gradient-to-r from-red-500 to-orange-600 rounded-xl shadow-xl p-6 text-white">
+        <div class="flex items-start space-x-4">
+            <div class="flex-shrink-0">
+                <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-xl font-bold mb-2">Account Suspended</h3>
+                <p class="text-white/90 mb-4">Your doctor account has been temporarily deactivated by the administrator. You cannot upload tests or add diagnoses until your account is reactivated.</p>
+                <a href="/contact?subject=Account%20Reactivation%20Request%20-%20Doctor" class="inline-flex items-center px-4 py-2 bg-white text-red-600 font-semibold rounded-lg hover:bg-red-50 transition-all duration-200">
+                    <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    Contact Support
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Header Section -->
+    <div class="mb-4 sm:mb-6 md:mb-8">
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">Doctor Dashboard</h1>
+        <p class="text-sm sm:text-base text-gray-600">Welcome back! Here's an overview of your patients and reports.</p>
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
+        <!-- Total Patients Card -->
+        <div class="glass-effect overflow-hidden rounded-xl shadow-lg hover-lift">
+            <div class="p-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-2">Total Patients</p>
+                        <p class="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">{{ stats.total_patients }}</p>
+                        <div class="mt-4 flex items-center text-sm">
+                            <span class="text-gray-500">Your patients</span>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <div class="h-16 w-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                            <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-blue-50 px-6 py-3">
+                <a href="/doctor/patients" class="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center transition-colors duration-200">
+                    View all patients
+                    <svg class="h-4 w-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- Pending Reports Card -->
+        <div class="glass-effect overflow-hidden rounded-xl shadow-lg hover-lift">
+            <div class="p-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-2">Pending Reports</p>
+                        <p class="text-4xl font-bold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">{{ stats.pending_reports }}</p>
+                        <div class="mt-4 flex items-center text-sm">
+                            <span class="text-gray-500">Awaiting review</span>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <div class="h-16 w-16 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
+                            <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-green-50 px-6 py-3">
+                <a href="#pending-reports" class="text-sm font-medium text-green-600 hover:text-green-700 flex items-center transition-colors duration-200">
+                    Review reports
+                    <svg class="h-4 w-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- Review Requests Card -->
+        <div class="glass-effect overflow-hidden rounded-xl shadow-lg hover-lift">
+            <div class="p-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-2">Review Requests</p>
+                        <p class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">{{ stats.review_requests }}</p>
+                        <div class="mt-4 flex items-center text-sm">
+                            <span class="text-gray-500">Patient requests</span>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <div class="h-16 w-16 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
+                            <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-purple-50 px-6 py-3">
+                <a href="#review-requests" class="text-sm font-medium text-purple-600 hover:text-purple-700 flex items-center transition-colors duration-200">
+                    View requests
+                    <svg class="h-4 w-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Recent Reports Section -->
+    <div class="glass-effect shadow-xl rounded-xl overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50">
+            <div class="flex items-center gap-3">
+                <span class="inline-block w-2 h-8 rounded bg-gradient-to-b from-blue-500 to-purple-600"></span>
+                <span class="text-2xl font-extrabold text-gray-900 tracking-tight">Recent Reports</span>
+            </div>
+            <div class="text-base text-gray-500 mt-1">Latest blood test results you reviewed or were requested for</div>
+        </div>
+        <div class="bg-white">
+            {% if recent_tests %}
+            <div class="divide-y divide-gray-200">
+                {% for test in recent_tests %}
+                <div class="p-4 hover:bg-gray-50 transition-colors duration-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-semibold text-gray-900">Test #{{ test.id }}</p>
+                            <p class="text-sm text-gray-500">{{ test.date }}</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="px-3 py-1 rounded-full text-xs font-medium
+                                {% if test.review_status == 'accepted' %}bg-green-100 text-green-800
+                                {% elif test.review_status == 'rejected' %}bg-red-100 text-red-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ test.review_status|title }}
+                            </span>
+                            <a href="/doctor/test/{{ test.id }}" class="px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 text-sm font-medium">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="overflow-hidden">
+                <div class="flex items-center justify-center py-16">
+                    <div class="text-center">
+                        <div class="mx-auto h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                            <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No tests involving you</h3>
+                        <p class="text-gray-500 text-sm mb-6">You have not reviewed or been requested for any tests yet.</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    
+    <!-- Review Requests Section -->
+    {% if review_requests %}
+    <div id="review-requests" class="glass-effect shadow-xl rounded-xl overflow-hidden mt-8">
+        <div class="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-purple-50">
+            <div class="flex items-center gap-3">
+                <span class="inline-block w-2 h-8 rounded bg-gradient-to-b from-purple-500 to-purple-700"></span>
+                <span class="text-2xl font-extrabold text-gray-900 tracking-tight">Review Requests</span>
+            </div>
+            <div class="text-base text-gray-500 mt-1">Tests awaiting your review as requested by patients</div>
+        </div>
+        <div class="bg-white divide-y divide-gray-200">
+            {% for request in review_requests %}
+            <div class="p-6 hover:bg-gray-50 transition-colors duration-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-start space-x-4 flex-1">
+                        <div class="h-12 w-12 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
+                            <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-3 mb-2">
+                                <h4 class="text-lg font-bold text-gray-900">Test #{{ request.test_id }}</h4>
+                                <span class="px-2.5 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">Requested</span>
+                            </div>
+                            <div class="space-y-1 text-sm text-gray-600">
+                                <div class="flex items-center">
+                                    <svg class="h-4 w-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                    <span class="font-medium">{{ request.patient_name }}</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <svg class="h-4 w-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <span>Requested on {{ request.requested_at }}</span>
+                                </div>
+                                <div class="mt-2 p-3 bg-gray-50 rounded-lg">
+                                    <p class="text-sm text-gray-700">{{ request.notes }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2 ml-4">
+                        <a href="/doctor/test/{{ request.test_id }}" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-center text-sm">
+                            Review Test
+                        </a>
+                        <a href="/doctor/patient/{{ request.patient_id }}" class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200 text-center text-sm font-medium">
+                            View Patient
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Pending Reports Section -->
+    {% if pending_reports %}
+        <div id="pending-reports" class="glass-effect shadow-xl rounded-xl overflow-hidden mt-8">
+            <div class="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-green-50">
+                <div class="flex items-center gap-3">
+                    <span class="inline-block w-2 h-8 rounded bg-gradient-to-b from-green-400 to-green-700"></span>
+                    <span class="text-2xl font-extrabold text-gray-900 tracking-tight">Pending Reports</span>
+                </div>
+                <div class="text-base text-gray-500 mt-1">Tests assigned to you and still pending review</div>
+            </div>
+            <div class="bg-white">
+                <div class="divide-y divide-gray-200">
+                    {% for test in pending_reports %}
+                    <div class="p-4 hover:bg-gray-50 transition-colors duration-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold text-gray-900">Test #{{ test.id }}</p>
+                                <p class="text-sm text-gray-500">{{ test.date }}</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
+                                <a href="/doctor/test/{{ test.id }}" class="px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 text-sm font-medium">
+                                    Review Now
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
