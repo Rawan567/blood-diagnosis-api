@@ -42,7 +42,11 @@ app = FastAPI(
 async def root_healthcheck():
     return {"status": "ok"}
 # Initialize templates early so exception handlers can use it
-templates = Jinja2Templates(directory="app/templates")
+if os.path.isdir("app/templates"):
+    templates = Jinja2Templates(directory="app/templates")
+else:
+    templates = None
+
 
 # Custom exception handler for HTTP errors
 @app.exception_handler(StarletteHTTPException)
@@ -51,11 +55,13 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     
     # Handle 401 - Unauthorized
     if exc.status_code == 401:
-        if "application/json" in accept_header:
-            return JSONResponse(
-                status_code=exc.status_code,
-                content={"detail": exc.detail}
-            )
+     if "application/json" in accept_header:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail}
+        )
+
+    if templates:
         return templates.TemplateResponse(
             "errors/401.html",
             {
@@ -64,6 +70,12 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
             },
             status_code=401
         )
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail}
+    )
+
     
     # Handle 403 - Forbidden
     if exc.status_code == 403:
